@@ -12,7 +12,7 @@ Here's a brief overview of how this entire system works:
 Firstly, you need the hardware that will interact with the Deck and controllers.
 This will continuously scan for Bluetooth devices and turn on the Deck once it detects a controller.
 The Deck is turned on from shutdown by connecting it to the charger.
-If the BIOS setting `Power on AC Attach` is enabled, this will power on the Deck.
+If the BIOS setting `Auto boot on AC attach` is enabled, this will power on the Deck.
 If the Deck is sleeping, the Arduino will send a keypress for 500ms to wake it up.
 
 Once the Deck is powered on, the Arduino needs to know when the Deck goes back to sleep or shuts down.
@@ -45,7 +45,13 @@ Visual diagram is WIP, for now, you'll just have to manage with text
 - Plug the USB-C male breakout board into the dock's charging port.
 
 ### BIOS
-Enable `Power on AC Attach`
+- Shut down your Steam Deck
+- Hold the Volume Up (+) button and press the power button.
+  - Continue holding the Volume Up button until you see the Insyde H2O BIOS screen.
+  - Use the right trackpad to move the mouse, or use the D-Pad to navigate. Press A to select.
+- Go to Setup Utility -> Power -> **Auto boot on AC attach**
+- Press A, select Enabled, and press A again
+- Go to Exit -> Exit Saving Changes
 
 ### Software
 You'll need to install a service to your Steam Deck for Deck Switch to behave.
