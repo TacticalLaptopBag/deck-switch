@@ -29,6 +29,7 @@ const char* const mac_addresses[] = {
 
 // How long (in milliseconds) to press the spacebar when a controller is detected
 #define KEY_PRESS_MILLIS 3000
+#define HEARTBEAT_TIMEOUT_MILLIS 10000
 
 
 enum ScanState {
@@ -55,8 +56,14 @@ ScanState scanState = ScanState::IDLE;
 bool scanContainsController = false;
 bool relayOn = false;
 uint64_t keyboardPressTime = 0;
+uint64_t lastHeartbeatTime = 0;
 size_t names_len = 0;
 size_t addresses_len = 0;
+
+char lastAddress[13];
+char msgBuffer[MESSAGE_LEN];
+uint16_t msgLen = 0;
+
 
 SoftwareSerial ble(PIN_BLE_RX, PIN_BLE_TX);
 
@@ -72,6 +79,11 @@ void onControllerDetected() {
 
     digitalWrite(PIN_RELAY, HIGH);
     relayOn = true;
+}
+
+void onConnectionLost() {
+    digitalWrite(PIN_RELAY, LOW);
+    relayOn = false;
 }
 
 void setup() {
@@ -137,15 +149,18 @@ void setup() {
 // ...
 // < OK+DISCE
 
-char msgBuffer[MESSAGE_LEN];
-uint16_t msgLen = 0;
-
 void loop() {
+    // Release spacebar after a set duration, if spacebar is held
     if(keyboardPressTime > 0 && millis() - keyboardPressTime >= KEY_PRESS_MILLIS) {
         Keyboard.releaseAll();
         keyboardPressTime = 0;
     }
 
+    scanLoop();
+    serialLoop();
+}
+
+void scanLoop() {
     if(scanState == IDLE) {
         Serial.println("$ Requesting scan...");
         ble.print("AT+DISC?");
@@ -189,14 +204,13 @@ void loop() {
 
         if(msgLen == 12) {
             Serial.print("$ MAC address: ");
-            char address[13];
-            strncpy(address, msgBuffer, 12);
-            address[12] = '\0';
-            Serial.println(address);
+            strncpy(lastAddress, msgBuffer, 12);
+            lastAddress[12] = '\0';
+            Serial.println(lastAddress);
 
             if(!scanContainsController) {
                 for(int i = 0; i < addresses_len; i++) {
-                    if(strcmp(mac_addresses[i], address) == 0) {
+                    if(strcmp(mac_addresses[i], lastAddress) == 0) {
                         Serial.println("--- CONTROLLER FOUND BY ADDRESS ---");
                         scanContainsController = true;
                         onControllerDetected();
@@ -239,5 +253,18 @@ void loop() {
     } else if(scanState == FINISHED) {
         Serial.println("$ Finished scanning.");
         scanState = IDLE;
+    }
+}
+
+void serialLoop() {
+    if(Serial.available()) {
+        char rx = (char)Serial.read();
+        if(rx == '!') {
+            lastHeartbeatTime = millis();
+        }
+    }
+
+    if(relayOn && millis() - lastHeartbeatTime > HEARTBEAT_TIMEOUT_MILLIS) {
+        onConnectionLost();
     }
 }
