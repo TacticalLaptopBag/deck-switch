@@ -29,7 +29,7 @@ const char* const mac_addresses[] = {
 
 // How long (in milliseconds) to press the spacebar when a controller is detected
 #define KEY_PRESS_MILLIS 3000
-#define HEARTBEAT_TIMEOUT_MILLIS 10000
+#define HEARTBEAT_TIMEOUT_MILLIS 15000
 
 
 enum ScanState {
@@ -72,6 +72,9 @@ SoftwareSerial ble(PIN_BLE_RX, PIN_BLE_TX);
  */
 void onControllerDetected() {
     if(!relayOn) {
+        // Set heartbeat time to give the Deck some time to start up
+        lastHeartbeatTime = millis();
+
         keyboardPressTime = millis();
         // Press spacebar
         Keyboard.press(32);
