@@ -12,11 +12,11 @@ const BAUD_RATE: u32 = 9600;
 /**
  * The time between heartbeat messages
  */
-const INTERVAL: Duration = Duration::from_secs(5);
+const INTERVAL: Duration = Duration::from_secs(3);
 /**
  * Time between retrying the serial connection
  */
-const DELAY: Duration = Duration::from_secs(8);
+const DELAY: Duration = Duration::from_secs(10);
 
 
 fn find_arduino_port(ports: &Vec<SerialPortInfo>) -> Option<&SerialPortInfo> {
