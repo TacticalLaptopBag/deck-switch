@@ -29,6 +29,7 @@ const char* const mac_addresses[] = {
 
 // How long (in milliseconds) to press the spacebar when a controller is detected
 #define KEY_PRESS_MILLIS 500
+// How long (in milliseconds) to wait for a heartbeat before deciding the host has disconnected
 #define HEARTBEAT_TIMEOUT_MILLIS 15000
 
 // Enable or disable serial transmits
@@ -300,10 +301,15 @@ void serialLoop() {
         }
     }
 
-    if(relayOn && millis() - lastHeartbeatTime > HEARTBEAT_TIMEOUT_MILLIS) {
+    if(relayOn && millis() - lastHeartbeatTime >= HEARTBEAT_TIMEOUT_MILLIS) {
 #if SERIAL_TX
         Serial.println("--- LOST CONNECTION TO HOST ---");
 #endif
         onConnectionLost();
+    } else if(!relayOn && millis() - lastHeartbeatTime < HEARTBEAT_TIMEOUT_MILLIS) {
+        // Somehow, the Steam Deck turned on without our knowledge.
+        // Close the relay so the Deck can charge
+        digitalWrite(PIN_RELAY, HIGH);
+        relayOn = true;
     }
 }
