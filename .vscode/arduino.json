@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:micro",
+    "programmer": "avrisp",
+    "port": "/dev/ttyACM0",
+    "sketch": "steam-deck-wake-on-controller.ino"
+}
