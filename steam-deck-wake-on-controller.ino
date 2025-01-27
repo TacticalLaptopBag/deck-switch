@@ -28,8 +28,13 @@ const char* const mac_addresses[] = {
 #define MESSAGE_LEN 512 + 9
 
 // How long (in milliseconds) to press the spacebar when a controller is detected
-#define KEY_PRESS_MILLIS 3000
+#define KEY_PRESS_MILLIS 500
 #define HEARTBEAT_TIMEOUT_MILLIS 15000
+
+// Enable or disable serial transmits
+// These are used for debugging purposes and should be left disabled when deployed to a real Deck.
+// Leaving this on will result in really strange behavior.
+#define SERIAL_TX false
 
 
 enum ScanState {
@@ -132,14 +137,20 @@ void setup() {
 
     // Show output of above configs to Serial Monitor
     while(ble.available()) {
+#if SERIAL_TX
         Serial.print((char)ble.read());
+#else
+        ble.read();
+#endif
     }
 
+#if SERIAL_TX
     Serial.print("\nReady (names: ");
     Serial.print(names_len);
     Serial.print(", addresses: ");
     Serial.print(addresses_len);
     Serial.println(")");
+#endif
 }
 
 // Discovery flow:
@@ -165,7 +176,9 @@ void loop() {
 
 void scanLoop() {
     if(scanState == IDLE) {
+#if SERIAL_TX
         Serial.println("$ Requesting scan...");
+#endif
         ble.print("AT+DISC?");
         scanState = REQUEST;
         scanContainsController = false;
@@ -176,7 +189,9 @@ void scanLoop() {
 
         if(msgLen == 8) {
             if(strncmp("OK+DISCS", msgBuffer, 8) == 0) {
+#if SERIAL_TX
                 Serial.println("$ Scanning...");
+#endif
                 scanState = SCANNING;
             }
 
@@ -189,10 +204,14 @@ void scanLoop() {
 
         if(msgLen == 8) {
             if(strncmp("OK+DIS", msgBuffer, 6) == 0 && msgBuffer[7] == ':') {
+#if SERIAL_TX
                 Serial.println("$ Discovered device, retrieving MAC address...");
+#endif
                 scanState = PARSE_MAC;
             } else if(strncmp("OK+NAME:", msgBuffer, 8) == 0) {
+#if SERIAL_TX
                 Serial.println("$ Retrieving device name...");
+#endif
                 scanState = PARSE_NAME;
             } else if(strncmp("OK+DISCE", msgBuffer, 8) == 0) {
                 scanState = FINISHED;
@@ -206,15 +225,21 @@ void scanLoop() {
         }
 
         if(msgLen == 12) {
+#if SERIAL_TX
             Serial.print("$ MAC address: ");
+#endif
             strncpy(lastAddress, msgBuffer, 12);
             lastAddress[12] = '\0';
+#if SERIAL_TX
             Serial.println(lastAddress);
+#endif
 
             if(!scanContainsController) {
                 for(int i = 0; i < addresses_len; i++) {
                     if(strcmp(mac_addresses[i], lastAddress) == 0) {
+#if SERIAL_TX
                         Serial.println("--- CONTROLLER FOUND BY ADDRESS ---");
+#endif
                         scanContainsController = true;
                         onControllerDetected();
                         break;
@@ -231,16 +256,22 @@ void scanLoop() {
         }
 
         if(msgLen >= 2 && msgBuffer[msgLen-2] == '\r' && msgBuffer[msgLen-1] == '\n') {
+#if SERIAL_TX
             Serial.print("$ Name: ");
+#endif
             char* name = (char*)calloc(msgLen-1, sizeof(char));
             strncpy(name, msgBuffer, msgLen-2);
+#if SERIAL_TX
             Serial.println(name);
+#endif
 
             if(!scanContainsController) {
                 for(int i = 0; i < names_len; i++) {
                     size_t len = strlen(names[i]);
                     if(strncasecmp(names[i], name, len) == 0) {
+#if SERIAL_TX
                         Serial.println("--- CONTROLLER FOUND BY NAME ---");
+#endif
                         scanContainsController = true;
                         onControllerDetected();
                         break;
@@ -254,7 +285,9 @@ void scanLoop() {
             free(name);
         }
     } else if(scanState == FINISHED) {
+#if SERIAL_TX
         Serial.println("$ Finished scanning.");
+#endif
         scanState = IDLE;
     }
 }
@@ -268,6 +301,9 @@ void serialLoop() {
     }
 
     if(relayOn && millis() - lastHeartbeatTime > HEARTBEAT_TIMEOUT_MILLIS) {
+#if SERIAL_TX
+        Serial.println("--- LOST CONNECTION TO HOST ---");
+#endif
         onConnectionLost();
     }
 }
