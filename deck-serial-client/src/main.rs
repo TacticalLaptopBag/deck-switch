@@ -1,6 +1,5 @@
-use std::{io, io::Read, io::Write, thread, time::Duration};
+use std::{io, io::Write, thread, time::Duration};
 
-// const CONSUME_LEN: usize = 8192;
 /**
  * The baud rate to use when communicating to the Arduino over USB
  */
@@ -36,18 +35,6 @@ fn main() {
 
             match arduino_builder.open() {
                 Ok(mut arduino) => loop {
-                    // Consume incoming bytes to clear up the TX Serial buffer on the Arduino
-                    // let mut buf: [u8; CONSUME_LEN] = [0; CONSUME_LEN];
-                    // match arduino.read(&mut buf) {
-                    //     Ok(len) => println!("Consumed {} bytes", len),
-                    //     Err(ref e) if e.kind() == io::ErrorKind::BrokenPipe => {
-                    //         eprintln!("Broken pipe");
-                    //         break;
-                    //     },
-                    //     Err(ref e) if e.kind() == io::ErrorKind::TimedOut => eprintln!("Read timed out"),
-                    //     Err(e) => eprintln!("Failed to consume RX: {:?}", e),
-                    // }
-
                     // Write the heartbeat byte to the port
                     match arduino.write("!".as_bytes()) {
                         Ok(_) => println!("!"),
